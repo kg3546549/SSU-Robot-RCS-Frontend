@@ -22,7 +22,8 @@ import {
   Icon,
   SimpleGrid
 } from '@chakra-ui/react';
-import { FiUsers, FiTrendingUp, FiDollarSign, FiShoppingBag } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiCpu, FiBattery, FiWifi, FiActivity } from 'react-icons/fi';
 
 const Dashboard: React.FC = () => {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -35,36 +36,36 @@ const Dashboard: React.FC = () => {
         <Flex mb={8}>
           <VStack align="start" spacing={1}>
             <Heading size="lg" color="gray.700">
-              대시보드
+              로봇 관리 대시보드
             </Heading>
-            <Text color="gray.500">오늘의 현황을 확인하세요</Text>
+            <Text color="gray.500">로봇 현황을 실시간으로 모니터링하세요</Text>
           </VStack>
           <Spacer />
           <HStack spacing={4}>
             <Button colorScheme="blue" size="sm">
-              새로고침
+              전체 새로고침
             </Button>
-            <Avatar size="sm" name="사용자" />
+            <Avatar size="sm" name="관리자" />
           </HStack>
         </Flex>
 
-        {/* Stats Cards */}
+        {/* Robot Status Overview */}
         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
           <Box bg={cardBg} p={6} borderRadius="lg" shadow="sm">
             <Flex align="center">
               <Box>
                 <Stat>
-                  <StatLabel color="gray.500">총 사용자</StatLabel>
-                  <StatNumber fontSize="2xl">1,234</StatNumber>
+                  <StatLabel color="gray.500">총 로봇 수</StatLabel>
+                  <StatNumber fontSize="2xl">12</StatNumber>
                   <StatHelpText>
                     <StatArrow type="increase" />
-                    23.36%
+                    2대 증가
                   </StatHelpText>
                 </Stat>
               </Box>
               <Spacer />
               <Box bg="blue.100" p={3} borderRadius="lg">
-                <Icon as={FiUsers as any} w={6} h={6} color="blue.500" />
+                <Icon as={FiCpu as any} w={6} h={6} color="blue.500" />
               </Box>
             </Flex>
           </Box>
@@ -73,17 +74,17 @@ const Dashboard: React.FC = () => {
             <Flex align="center">
               <Box>
                 <Stat>
-                  <StatLabel color="gray.500">매출</StatLabel>
-                  <StatNumber fontSize="2xl">₩2,456,000</StatNumber>
+                  <StatLabel color="gray.500">활성 로봇</StatLabel>
+                  <StatNumber fontSize="2xl">8</StatNumber>
                   <StatHelpText>
                     <StatArrow type="increase" />
-                    4.05%
+                    66.7% 가동률
                   </StatHelpText>
                 </Stat>
               </Box>
               <Spacer />
               <Box bg="green.100" p={3} borderRadius="lg">
-                <Icon as={FiDollarSign as any} w={6} h={6} color="green.500" />
+                <Icon as={FiActivity as any} w={6} h={6} color="green.500" />
               </Box>
             </Flex>
           </Box>
@@ -92,17 +93,17 @@ const Dashboard: React.FC = () => {
             <Flex align="center">
               <Box>
                 <Stat>
-                  <StatLabel color="gray.500">주문</StatLabel>
-                  <StatNumber fontSize="2xl">89</StatNumber>
+                  <StatLabel color="gray.500">배터리 경고</StatLabel>
+                  <StatNumber fontSize="2xl">3</StatNumber>
                   <StatHelpText>
                     <StatArrow type="decrease" />
-                    1.05%
+                    낮은 배터리
                   </StatHelpText>
                 </Stat>
               </Box>
               <Spacer />
               <Box bg="orange.100" p={3} borderRadius="lg">
-                <Icon as={FiShoppingBag as any} w={6} h={6} color="orange.500" />
+                <Icon as={FiBattery as any} w={6} h={6} color="orange.500" />
               </Box>
             </Flex>
           </Box>
@@ -111,17 +112,17 @@ const Dashboard: React.FC = () => {
             <Flex align="center">
               <Box>
                 <Stat>
-                  <StatLabel color="gray.500">전환율</StatLabel>
-                  <StatNumber fontSize="2xl">3.2%</StatNumber>
+                  <StatLabel color="gray.500">연결 상태</StatLabel>
+                  <StatNumber fontSize="2xl">10</StatNumber>
                   <StatHelpText>
                     <StatArrow type="increase" />
-                    0.8%
+                    온라인
                   </StatHelpText>
                 </Stat>
               </Box>
               <Spacer />
               <Box bg="purple.100" p={3} borderRadius="lg">
-                <Icon as={FiTrendingUp as any} w={6} h={6} color="purple.500" />
+                <Icon as={FiWifi as any} w={6} h={6} color="purple.500" />
               </Box>
             </Flex>
           </Box>
@@ -132,30 +133,38 @@ const Dashboard: React.FC = () => {
           {/* Main Content */}
           <GridItem>
             <Box bg={cardBg} p={6} borderRadius="lg" shadow="sm">
-              <Heading size="md" mb={4}>최근 활동</Heading>
+              <Heading size="md" mb={4}>로봇 상태 알림</Heading>
               <VStack spacing={4} align="stretch">
                 <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
                   <VStack align="start" spacing={1}>
-                    <Text fontWeight="semibold">새로운 주문</Text>
-                    <Text fontSize="sm" color="gray.500">주문 #1234가 접수되었습니다</Text>
+                    <Text fontWeight="semibold">Robot-01 배터리 부족</Text>
+                    <Text fontSize="sm" color="gray.500">배터리 잔량 15% - 충전 필요</Text>
                   </VStack>
-                  <Badge colorScheme="green">새로운</Badge>
+                  <Badge colorScheme="red">경고</Badge>
                 </Flex>
 
                 <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
                   <VStack align="start" spacing={1}>
-                    <Text fontWeight="semibold">사용자 등록</Text>
-                    <Text fontSize="sm" color="gray.500">5명의 새로운 사용자가 가입했습니다</Text>
+                    <Text fontWeight="semibold">Robot-05 작업 완료</Text>
+                    <Text fontSize="sm" color="gray.500">청소 작업이 성공적으로 완료되었습니다</Text>
+                  </VStack>
+                  <Badge colorScheme="green">완료</Badge>
+                </Flex>
+
+                <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="semibold">Robot-03 연결 끊김</Text>
+                    <Text fontSize="sm" color="gray.500">WiFi 연결이 불안정합니다</Text>
+                  </VStack>
+                  <Badge colorScheme="orange">주의</Badge>
+                </Flex>
+
+                <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="semibold">Robot-08 새로 등록</Text>
+                    <Text fontSize="sm" color="gray.500">새로운 로봇이 시스템에 추가되었습니다</Text>
                   </VStack>
                   <Badge colorScheme="blue">정보</Badge>
-                </Flex>
-
-                <Flex justify="space-between" align="center" p={4} bg="gray.50" borderRadius="md">
-                  <VStack align="start" spacing={1}>
-                    <Text fontWeight="semibold">시스템 업데이트</Text>
-                    <Text fontSize="sm" color="gray.500">버전 1.2.3이 배포되었습니다</Text>
-                  </VStack>
-                  <Badge colorScheme="purple">업데이트</Badge>
                 </Flex>
               </VStack>
             </Box>
@@ -165,46 +174,67 @@ const Dashboard: React.FC = () => {
           <GridItem>
             <VStack spacing={6}>
               <Box bg={cardBg} p={6} borderRadius="lg" shadow="sm" w="100%">
-                <Heading size="md" mb={4}>빠른 액션</Heading>
+                <Heading size="md" mb={4}>로봇 제어</Heading>
                 <VStack spacing={3}>
                   <Button colorScheme="blue" w="100%" size="sm">
-                    새 사용자 추가
+                    모든 로봇 재시작
                   </Button>
                   <Button colorScheme="green" w="100%" size="sm">
-                    리포트 생성
+                    배터리 충전 모드
                   </Button>
                   <Button colorScheme="orange" w="100%" size="sm">
-                    설정 관리
+                    긴급 정지
                   </Button>
+                  <Link to="/robot-list" style={{ width: '100%' }}>
+                    <Button colorScheme="purple" w="100%" size="sm">
+                      로봇 목록 보기
+                    </Button>
+                  </Link>
                 </VStack>
               </Box>
 
               <Box bg={cardBg} p={6} borderRadius="lg" shadow="sm" w="100%">
-                <Heading size="md" mb={4}>최근 사용자</Heading>
+                <Heading size="md" mb={4}>활성 로봇</Heading>
                 <VStack spacing={3}>
-                  <Flex w="100%" align="center">
-                    <Avatar size="sm" name="김철수" />
-                    <VStack align="start" spacing={0} ml={3} flex={1}>
-                      <Text fontSize="sm" fontWeight="semibold">김철수</Text>
-                      <Text fontSize="xs" color="gray.500">5분 전</Text>
-                    </VStack>
-                  </Flex>
+                  <Link to="/robot-detail/Robot-01" style={{ width: '100%' }}>
+                    <Flex w="100%" align="center" p={2} borderRadius="md" _hover={{ bg: 'gray.50' }} cursor="pointer">
+                      <Box w={3} h={3} bg="green.400" borderRadius="full" />
+                      <VStack align="start" spacing={0} ml={3} flex={1}>
+                        <Text fontSize="sm" fontWeight="semibold">Robot-01</Text>
+                        <Text fontSize="xs" color="gray.500">작업 중 • 85%</Text>
+                      </VStack>
+                    </Flex>
+                  </Link>
 
-                  <Flex w="100%" align="center">
-                    <Avatar size="sm" name="이영희" />
-                    <VStack align="start" spacing={0} ml={3} flex={1}>
-                      <Text fontSize="sm" fontWeight="semibold">이영희</Text>
-                      <Text fontSize="xs" color="gray.500">10분 전</Text>
-                    </VStack>
-                  </Flex>
+                  <Link to="/robot-detail/Robot-05" style={{ width: '100%' }}>
+                    <Flex w="100%" align="center" p={2} borderRadius="md" _hover={{ bg: 'gray.50' }} cursor="pointer">
+                      <Box w={3} h={3} bg="green.400" borderRadius="full" />
+                      <VStack align="start" spacing={0} ml={3} flex={1}>
+                        <Text fontSize="sm" fontWeight="semibold">Robot-05</Text>
+                        <Text fontSize="xs" color="gray.500">대기 중 • 92%</Text>
+                      </VStack>
+                    </Flex>
+                  </Link>
 
-                  <Flex w="100%" align="center">
-                    <Avatar size="sm" name="박민수" />
-                    <VStack align="start" spacing={0} ml={3} flex={1}>
-                      <Text fontSize="sm" fontWeight="semibold">박민수</Text>
-                      <Text fontSize="xs" color="gray.500">1시간 전</Text>
-                    </VStack>
-                  </Flex>
+                  <Link to="/robot-detail/Robot-03" style={{ width: '100%' }}>
+                    <Flex w="100%" align="center" p={2} borderRadius="md" _hover={{ bg: 'gray.50' }} cursor="pointer">
+                      <Box w={3} h={3} bg="red.400" borderRadius="full" />
+                      <VStack align="start" spacing={0} ml={3} flex={1}>
+                        <Text fontSize="sm" fontWeight="semibold">Robot-03</Text>
+                        <Text fontSize="xs" color="gray.500">오프라인 • 0%</Text>
+                      </VStack>
+                    </Flex>
+                  </Link>
+
+                  <Link to="/robot-detail/Robot-07" style={{ width: '100%' }}>
+                    <Flex w="100%" align="center" p={2} borderRadius="md" _hover={{ bg: 'gray.50' }} cursor="pointer">
+                      <Box w={3} h={3} bg="yellow.400" borderRadius="full" />
+                      <VStack align="start" spacing={0} ml={3} flex={1}>
+                        <Text fontSize="sm" fontWeight="semibold">Robot-07</Text>
+                        <Text fontSize="xs" color="gray.500">충전 중 • 45%</Text>
+                      </VStack>
+                    </Flex>
+                  </Link>
                 </VStack>
               </Box>
             </VStack>
