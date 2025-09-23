@@ -1,8 +1,19 @@
 # SSU Department of Digital Media Robot Club
 
+## Overview
+     숭실대학교 로봇 소모임 로봇 제어 페이지 Frontend
 
+### Dashboard
 ![alt text](./md.resources/main_page.png)
 
+### Control Board
+![alt text](./md.resources/ControlBoard_Page.png)
+
+### Robot List
+![alt text](./md.resources/RobotList_Page.png)
+
+### Settings
+![alt text](./md.resources/Settings_Page.png)
 
 ## Available Scripts
 
