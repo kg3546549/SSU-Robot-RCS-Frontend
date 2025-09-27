@@ -31,16 +31,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       description: '전체 현황'
     },
     {
-      path: '/robot-detail',
-      label: '로봇 제어',
-      icon: FiCpu,
-      description: '개별 제어'
-    },
-    {
       path: '/robot-list',
       label: '로봇 목록',
       icon: FiList,
       description: '전체 관리'
+    },
+    {
+      path: '/robot-detail',
+      label: '로봇 제어',
+      icon: FiCpu,
+      description: '개별 제어'
     },
     {
       path: '/settings',
