@@ -33,17 +33,34 @@ import {
   AlertTitle,
   AlertDescription
 } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FiBattery, FiWifi, FiActivity, FiSettings, FiPlay, FiPause, FiRefreshCw } from 'react-icons/fi';
 import { useRobot } from '../hooks/useRobots';
+import { useRecentRobot } from '../contexts/RecentRobotContext';
 
 const RobotDetail: React.FC = () => {
   const { robotId } = useParams<{ robotId: string }>();
+  const navigate = useNavigate();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
+  const { recentRobotId, setRecentRobotId } = useRecentRobot();
+
+  // robotId가 없고 최근 조회한 로봇이 있다면 리다이렉트
+  React.useEffect(() => {
+    if (!robotId && recentRobotId) {
+      navigate(`/robot-detail/${recentRobotId}`, { replace: true });
+    }
+  }, [robotId, recentRobotId, navigate]);
 
   // API 연동을 위한 hooks
   const { robot, loading, error, refreshRobot } = useRobot(robotId);
+
+  // 로봇 정보가 로드되면 최근 조회한 로봇으로 설정
+  React.useEffect(() => {
+    if (robot && robotId) {
+      setRecentRobotId(robotId);
+    }
+  }, [robot, robotId, setRecentRobotId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -76,6 +93,25 @@ const RobotDetail: React.FC = () => {
 
   // 로봇 온라인 상태 확인
   const isOnline = robot?.status === 'online';
+
+  // robotId가 없고 최근 조회한 로봇도 없는 경우
+  if (!robotId && !recentRobotId) {
+    return (
+      <Box bg={bgColor} minH="100vh">
+        <Container maxW="container.xl" py={8}>
+          <Alert status="info">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>로봇을 선택해주세요</AlertTitle>
+              <AlertDescription>
+                제어할 로봇을 선택하거나 로봇 목록에서 로봇을 선택해주세요.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
 
   if (loading) {
     return (
