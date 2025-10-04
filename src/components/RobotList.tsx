@@ -66,8 +66,8 @@ const RobotList: React.FC = () => {
   const [formData, setFormData] = useState<CreateRobotDto>({
     name: '',
     type: '',
-    ipAddress: '',
-    port: 8080,
+    ipAddress: '192.168.0.',
+    port: 9090,
     description: ''
   });
   const [selectedRobotId, setSelectedRobotId] = useState<string>('');
@@ -128,7 +128,7 @@ const RobotList: React.FC = () => {
           isClosable: true,
         });
         onAddClose();
-        setFormData({ name: '', type: '', ipAddress: '', port: 8080, description: '' });
+        setFormData({ name: '', type: '', ipAddress: '192.168.0.', port: 9090, description: '' });
         refreshRobots();
       } else {
         throw new Error(response.message || '로봇 생성에 실패했습니다.');
@@ -185,7 +185,7 @@ const RobotList: React.FC = () => {
           isClosable: true,
         });
         onEditClose();
-        setFormData({ name: '', type: '', ipAddress: '', port: 8080, description: '' });
+        setFormData({ name: '', type: '', ipAddress: '192.168.0.', port: 9090, description: '' });
         refreshRobots();
       } else {
         throw new Error(response.message || '로봇 수정에 실패했습니다.');
@@ -438,7 +438,7 @@ const RobotList: React.FC = () => {
                 <FormControl isRequired>
                   <FormLabel>IP 주소</FormLabel>
                   <Input
-                    placeholder="192.168.1.100"
+                    placeholder="192.168.0.100"
                     value={formData.ipAddress}
                     onChange={(e) => setFormData({...formData, ipAddress: e.target.value})}
                   />
@@ -447,9 +447,9 @@ const RobotList: React.FC = () => {
                   <FormLabel>포트</FormLabel>
                   <Input
                     type="number"
-                    placeholder="8080"
+                    placeholder="9090"
                     value={formData.port}
-                    onChange={(e) => setFormData({...formData, port: parseInt(e.target.value) || 8080})}
+                    onChange={(e) => setFormData({...formData, port: parseInt(e.target.value) || 9090})}
                   />
                 </FormControl>
                 <FormControl>
@@ -511,7 +511,7 @@ const RobotList: React.FC = () => {
                 <FormControl isRequired>
                   <FormLabel>IP 주소</FormLabel>
                   <Input
-                    placeholder="192.168.1.100"
+                    placeholder="192.168.0.100"
                     value={formData.ipAddress}
                     onChange={(e) => setFormData({...formData, ipAddress: e.target.value})}
                   />
@@ -520,9 +520,9 @@ const RobotList: React.FC = () => {
                   <FormLabel>포트</FormLabel>
                   <Input
                     type="number"
-                    placeholder="8080"
+                    placeholder="9090"
                     value={formData.port}
-                    onChange={(e) => setFormData({...formData, port: parseInt(e.target.value) || 8080})}
+                    onChange={(e) => setFormData({...formData, port: parseInt(e.target.value) || 9090})}
                   />
                 </FormControl>
                 <FormControl>
