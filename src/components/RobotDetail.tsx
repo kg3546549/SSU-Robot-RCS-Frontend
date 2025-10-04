@@ -42,12 +42,9 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiBattery, FiWifi, FiActivity, FiSettings, FiPlay, FiPause, FiRefreshCw } from 'react-icons/fi';
 import { useRobot } from '../hooks/useRobots';
-<<<<<<< HEAD
 import { useRobotControl } from '../hooks/useRobotControl';
 import VirtualJoystick from './VirtualJoystick';
-=======
 import { useRecentRobot } from '../contexts/RecentRobotContext';
->>>>>>> 15b5d702f94bfb29217791b6a3246adeb2256ca5
 
 const RobotDetail: React.FC = () => {
   const { robotId } = useParams<{ robotId: string }>();
@@ -66,7 +63,6 @@ const RobotDetail: React.FC = () => {
   // API 연동을 위한 hooks
   const { robot, loading, error, refreshRobot } = useRobot(robotId);
 
-<<<<<<< HEAD
   // Robot control hook
   const {
     isConnected,
@@ -97,6 +93,13 @@ const RobotDetail: React.FC = () => {
     }
   }, [robotId, isConnected, isRobotConnected, connectToRobot]);
 
+  // 로봇 정보가 로드되면 최근 조회한 로봇으로 설정
+  useEffect(() => {
+    if (robot && robotId) {
+      setRecentRobotId(robotId);
+    }
+  }, [robot, robotId, setRecentRobotId]);
+
   // 모드 정보는 useRobotControl Hook에서 자동으로 요청됨
 
   const handleJoystickMove = (data: { x: number; y: number }) => {
@@ -114,14 +117,6 @@ const RobotDetail: React.FC = () => {
   const handleSetMode = (modeValue: number) => {
     setMode(modeValue, modeSpeed);
   };
-=======
-  // 로봇 정보가 로드되면 최근 조회한 로봇으로 설정
-  React.useEffect(() => {
-    if (robot && robotId) {
-      setRecentRobotId(robotId);
-    }
-  }, [robot, robotId, setRecentRobotId]);
->>>>>>> 15b5d702f94bfb29217791b6a3246adeb2256ca5
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+import { useState, useEffect, useCallback } from 'react';
+import { useSocket } from '../contexts/SocketContext';
 
 interface JoystickData {
   x: number;
@@ -30,7 +28,7 @@ interface RobotError {
 }
 
 export const useRobotControl = (robotId: string) => {
-  const [isConnected, setIsConnected] = useState(false);
+  const { socket, isConnected } = useSocket(); // Use global socket
   const [isRobotConnected, setIsRobotConnected] = useState(false);
   const [currentMode, setCurrentMode] = useState<ModeInfo>({ currentMode: 0, modeName: 'IDLE' });
   const [availableModes, setAvailableModes] = useState<ModeOption[]>([
@@ -43,24 +41,17 @@ export const useRobotControl = (robotId: string) => {
     { value: 99, name: 'EMERGENCY' },
   ]);
   const [logs, setLogs] = useState<string[]>([]);
-  const socketRef = useRef<Socket | null>(null);
 
-  // Socket 연결
+  const addLog = useCallback((message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
+  }, []);
+
+  // Setup event listeners
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-    });
+    if (!socket || !robotId) return;
 
-    socket.on('connect', () => {
-      console.log('Socket connected');
-      setIsConnected(true);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-      setIsRobotConnected(false);
-    });
+    console.log(`Setting up listeners for robot ${robotId}`);
 
     // Robot connection events
     socket.on('robot:connected', (data: { robotId: string; message: string }) => {
@@ -122,115 +113,116 @@ export const useRobotControl = (robotId: string) => {
       }
     });
 
-    socketRef.current = socket;
-
+    // Cleanup: remove listeners when robotId changes or component unmounts
     return () => {
-      socket.disconnect();
+      console.log(`Cleaning up listeners for robot ${robotId}`);
+      socket.off('robot:connected');
+      socket.off('robot:disconnected');
+      socket.off('robot:statusChanged');
+      socket.off('robot:modeChanged');
+      socket.off('robot:modeList');
+      socket.off('robot:log');
+      socket.off('robot:error');
     };
-  }, [robotId]);
-
-  const addLog = useCallback((message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
-  }, []);
+  }, [socket, robotId, addLog]);
 
   // Connect to robot
   const connectToRobot = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('robot:connect', { robotId });
+    if (socket) {
+      socket.emit('robot:connect', { robotId });
     }
-  }, [robotId]);
+  }, [socket, robotId]);
 
   // Disconnect from robot
   const disconnectFromRobot = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('robot:disconnect', { robotId });
+    if (socket) {
+      socket.emit('robot:disconnect', { robotId });
     }
-  }, [robotId]);
+  }, [socket, robotId]);
 
   // Joystick control
   const sendJoystick = useCallback(
     (data: JoystickData) => {
-      if (socketRef.current && isRobotConnected) {
-        socketRef.current.emit('robot:joystick', {
+      if (socket && isRobotConnected) {
+        socket.emit('robot:joystick', {
           robotId,
           x: data.x,
           y: data.y,
         });
       }
     },
-    [robotId, isRobotConnected],
+    [socket, robotId, isRobotConnected],
   );
 
   // Move command
   const sendMove = useCallback(
     (direction: 'forward' | 'backward' | 'left' | 'right', speed: number) => {
-      if (socketRef.current && isRobotConnected) {
-        socketRef.current.emit('robot:move', {
+      if (socket && isRobotConnected) {
+        socket.emit('robot:move', {
           robotId,
           direction,
           speed,
         });
       }
     },
-    [robotId, isRobotConnected],
+    [socket, robotId, isRobotConnected],
   );
 
   // Rotate command
   const sendRotate = useCallback(
     (direction: 'left' | 'right', speed: number) => {
-      if (socketRef.current && isRobotConnected) {
-        socketRef.current.emit('robot:rotate', {
+      if (socket && isRobotConnected) {
+        socket.emit('robot:rotate', {
           robotId,
           direction,
           speed,
         });
       }
     },
-    [robotId, isRobotConnected],
+    [socket, robotId, isRobotConnected],
   );
 
   // Stop command
   const sendStop = useCallback(() => {
-    if (socketRef.current && isRobotConnected) {
-      socketRef.current.emit('robot:stop', { robotId });
+    if (socket && isRobotConnected) {
+      socket.emit('robot:stop', { robotId });
     }
-  }, [robotId, isRobotConnected]);
+  }, [socket, robotId, isRobotConnected]);
 
   // Emergency stop
   const sendEmergencyStop = useCallback(() => {
-    if (socketRef.current && isRobotConnected) {
-      socketRef.current.emit('robot:emergency', { robotId });
+    if (socket && isRobotConnected) {
+      socket.emit('robot:emergency', { robotId });
     }
-  }, [robotId, isRobotConnected]);
+  }, [socket, robotId, isRobotConnected]);
 
   // Set mode
   const setMode = useCallback(
     (mode: number, speed: number = 0.5) => {
-      if (socketRef.current && isRobotConnected) {
-        socketRef.current.emit('robot:setMode', {
+      if (socket && isRobotConnected) {
+        socket.emit('robot:setMode', {
           robotId,
           mode,
           speed,
         });
       }
     },
-    [robotId, isRobotConnected],
+    [socket, robotId, isRobotConnected],
   );
 
   // Get current mode
   const getMode = useCallback(() => {
-    if (socketRef.current && isRobotConnected) {
-      socketRef.current.emit('robot:getMode', { robotId });
+    if (socket && isRobotConnected) {
+      socket.emit('robot:getMode', { robotId });
     }
-  }, [robotId, isRobotConnected]);
+  }, [socket, robotId, isRobotConnected]);
 
   // Get mode list
   const getModeList = useCallback(() => {
-    if (socketRef.current && isRobotConnected) {
-      socketRef.current.emit('robot:getModeList', { robotId });
+    if (socket && isRobotConnected) {
+      socket.emit('robot:getModeList', { robotId });
     }
-  }, [robotId, isRobotConnected]);
+  }, [socket, robotId, isRobotConnected]);
 
   // Clear logs
   const clearLogs = useCallback(() => {

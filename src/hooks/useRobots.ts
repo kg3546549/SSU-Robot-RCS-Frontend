@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Robot, ApiResponse } from '../types/robot';
 import apiService from '../services/api';
-import { io } from 'socket.io-client';
-
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+import { useSocket } from '../contexts/SocketContext';
 
 export const useRobots = (filters?: { type?: string; status?: string }) => {
   const [robots, setRobots] = useState<Robot[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { socket } = useSocket();
 
   const fetchRobots = useCallback(async () => {
     setLoading(true);
@@ -31,13 +30,13 @@ export const useRobots = (filters?: { type?: string; status?: string }) => {
 
   useEffect(() => {
     fetchRobots();
+  }, [fetchRobots]);
 
-    // Listen for real-time status updates
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket'],
-    });
+  // Listen for real-time status updates
+  useEffect(() => {
+    if (!socket) return;
 
-    socket.on('robot:statusChanged', (data: { robotId: string; status: string }) => {
+    const handleStatusChange = (data: { robotId: string; status: string }) => {
       setRobots((prevRobots) =>
         prevRobots.map((robot) =>
           robot.id === data.robotId
@@ -45,12 +44,14 @@ export const useRobots = (filters?: { type?: string; status?: string }) => {
             : robot
         )
       );
-    });
+    };
+
+    socket.on('robot:statusChanged', handleStatusChange);
 
     return () => {
-      socket.disconnect();
+      socket.off('robot:statusChanged', handleStatusChange);
     };
-  }, [fetchRobots]);
+  }, [socket]);
 
   const refreshRobots = useCallback(() => {
     fetchRobots();
