@@ -54,6 +54,7 @@ const RobotList: React.FC = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const hoverBg = useColorModeValue('gray.50', 'gray.700');
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const toast = useToast();
   const navigate = useNavigate();
@@ -135,6 +136,63 @@ const RobotList: React.FC = () => {
     } catch (error) {
       toast({
         title: '생성 실패',
+        description: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditRobot = (robotId: string) => {
+    const robot = robots.find(r => r.id === robotId);
+    if (robot) {
+      setSelectedRobotId(robotId);
+      setFormData({
+        name: robot.name,
+        type: robot.type,
+        ipAddress: robot.ipAddress,
+        port: robot.port,
+        description: robot.description || ''
+      });
+      onEditOpen();
+    }
+  };
+
+  const handleUpdateRobot = async () => {
+    if (!formData.name || !formData.type || !formData.ipAddress) {
+      toast({
+        title: '입력 오류',
+        description: '필수 항목을 모두 입력해주세요.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await apiService.updateRobot(selectedRobotId, formData);
+      if (response.success) {
+        toast({
+          title: '로봇 수정 완료',
+          description: '로봇 정보가 성공적으로 수정되었습니다.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        onEditClose();
+        setFormData({ name: '', type: '', ipAddress: '', port: 8080, description: '' });
+        refreshRobots();
+      } else {
+        throw new Error(response.message || '로봇 수정에 실패했습니다.');
+      }
+    } catch (error) {
+      toast({
+        title: '수정 실패',
         description: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.',
         status: 'error',
         duration: 3000,
@@ -316,13 +374,20 @@ const RobotList: React.FC = () => {
                                 상세 보기
                               </MenuItem>
                             </Link>
-                            <MenuItem icon={<Icon as={FiEdit3 as any} />}>
+                            <MenuItem
+                              icon={<Icon as={FiEdit3 as any} />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditRobot(robot.id);
+                              }}
+                            >
                               수정
                             </MenuItem>
                             <MenuItem
                               icon={<Icon as={FiTrash2 as any} />}
                               color="red.500"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedRobotId(robot.id);
                                 onDeleteOpen();
                               }}
@@ -408,6 +473,79 @@ const RobotList: React.FC = () => {
                 loadingText="추가 중..."
               >
                 추가
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Edit Robot Modal */}
+        <Modal isOpen={isEditOpen} onClose={onEditClose}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>로봇 정보 수정</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>로봇 이름</FormLabel>
+                  <Input
+                    placeholder="로봇 이름을 입력하세요"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>로봇 타입</FormLabel>
+                  <Select
+                    placeholder="타입을 선택하세요"
+                    value={formData.type}
+                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  >
+                    <option value="Industrial Arm">산업용 로봇팔</option>
+                    <option value="Mobile Robot">이동형 로봇</option>
+                    <option value="Service Robot">서비스 로봇</option>
+                    <option value="Cleaning Robot">청소 로봇</option>
+                    <option value="Security Robot">보안 로봇</option>
+                  </Select>
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>IP 주소</FormLabel>
+                  <Input
+                    placeholder="192.168.1.100"
+                    value={formData.ipAddress}
+                    onChange={(e) => setFormData({...formData, ipAddress: e.target.value})}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>포트</FormLabel>
+                  <Input
+                    type="number"
+                    placeholder="8080"
+                    value={formData.port}
+                    onChange={(e) => setFormData({...formData, port: parseInt(e.target.value) || 8080})}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>설명</FormLabel>
+                  <Input
+                    placeholder="로봇 설명 (선택사항)"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  />
+                </FormControl>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button colorScheme="gray" mr={3} onClick={onEditClose} disabled={isSubmitting}>
+                취소
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={handleUpdateRobot}
+                isLoading={isSubmitting}
+                loadingText="수정 중..."
+              >
+                수정
               </Button>
             </ModalFooter>
           </ModalContent>

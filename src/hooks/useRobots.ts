@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Robot, ApiResponse } from '../types/robot';
 import apiService from '../services/api';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
 export const useRobots = (filters?: { type?: string; status?: string }) => {
   const [robots, setRobots] = useState<Robot[]>([]);
@@ -28,6 +31,25 @@ export const useRobots = (filters?: { type?: string; status?: string }) => {
 
   useEffect(() => {
     fetchRobots();
+
+    // Listen for real-time status updates
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+    });
+
+    socket.on('robot:statusChanged', (data: { robotId: string; status: string }) => {
+      setRobots((prevRobots) =>
+        prevRobots.map((robot) =>
+          robot.id === data.robotId
+            ? { ...robot, status: data.status as 'online' | 'offline' | 'error', lastSeen: new Date().toISOString() }
+            : robot
+        )
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [fetchRobots]);
 
   const refreshRobots = useCallback(() => {

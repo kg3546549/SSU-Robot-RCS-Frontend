@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -31,11 +31,19 @@ import {
   Alert,
   AlertIcon,
   AlertTitle,
-  AlertDescription
+  AlertDescription,
+  Select,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { FiBattery, FiWifi, FiActivity, FiSettings, FiPlay, FiPause, FiRefreshCw } from 'react-icons/fi';
 import { useRobot } from '../hooks/useRobots';
+import { useRobotControl } from '../hooks/useRobotControl';
+import VirtualJoystick from './VirtualJoystick';
 
 const RobotDetail: React.FC = () => {
   const { robotId } = useParams<{ robotId: string }>();
@@ -44,6 +52,54 @@ const RobotDetail: React.FC = () => {
 
   // API 연동을 위한 hooks
   const { robot, loading, error, refreshRobot } = useRobot(robotId);
+
+  // Robot control hook
+  const {
+    isConnected,
+    isRobotConnected,
+    currentMode,
+    availableModes,
+    logs,
+    connectToRobot,
+    disconnectFromRobot,
+    sendJoystick,
+    sendRotate,
+    sendStop,
+    sendEmergencyStop,
+    setMode,
+    getMode,
+    getModeList,
+    clearLogs,
+  } = useRobotControl(robotId || '');
+
+  const [maxAngularSpeed, setMaxAngularSpeed] = useState(1.0);
+  const [selectedMode, setSelectedMode] = useState(0);
+  const [modeSpeed, setModeSpeed] = useState(0.5);
+
+  // Connect to robot when component mounts
+  useEffect(() => {
+    if (robotId && isConnected && !isRobotConnected) {
+      connectToRobot();
+    }
+  }, [robotId, isConnected, isRobotConnected, connectToRobot]);
+
+  // 모드 정보는 useRobotControl Hook에서 자동으로 요청됨
+
+  const handleJoystickMove = (data: { x: number; y: number }) => {
+    sendJoystick(data);
+  };
+
+  const handleJoystickStop = () => {
+    sendStop();
+  };
+
+  const handleEmergencyStop = () => {
+    sendEmergencyStop();
+  };
+
+  const handleSetMode = (modeValue: number) => {
+    setMode(modeValue, modeSpeed);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -74,8 +130,8 @@ const RobotDetail: React.FC = () => {
     return `${Math.floor(diffInMinutes / 1440)}일 전`;
   };
 
-  // 로봇 온라인 상태 확인
-  const isOnline = robot?.status === 'online';
+  // 로봇 온라인 상태 확인 (WebSocket 연결 상태 우선)
+  const isOnline = isRobotConnected || robot?.status === 'online';
 
   if (loading) {
     return (
@@ -144,14 +200,17 @@ const RobotDetail: React.FC = () => {
             <Button colorScheme="blue" size="sm" leftIcon={<Icon as={FiRefreshCw as any} />} onClick={refreshRobot}>
               새로고침
             </Button>
-            <Button colorScheme="red" size="sm" leftIcon={<Icon as={FiPause as any} />} disabled={!isOnline}>
-              정지
-            </Button>
-            <Button colorScheme="green" size="sm" leftIcon={<Icon as={FiPlay as any} />} disabled={!isOnline}>
-              시작
-            </Button>
-            <Badge colorScheme={getStatusColor(robot.status)} fontSize="md" p={2}>
-              {getStatusLabel(robot.status)}
+            {!isRobotConnected ? (
+              <Button colorScheme="green" size="sm" onClick={connectToRobot} isDisabled={!isConnected}>
+                로봇 연결
+              </Button>
+            ) : (
+              <Button colorScheme="red" size="sm" onClick={disconnectFromRobot}>
+                연결 해제
+              </Button>
+            )}
+            <Badge colorScheme={isRobotConnected ? 'green' : getStatusColor(robot.status)} fontSize="md" p={2}>
+              {isRobotConnected ? '연결됨' : getStatusLabel(robot.status)}
             </Badge>
           </HStack>
         </Flex>
@@ -337,7 +396,7 @@ const RobotDetail: React.FC = () => {
 
         {/* Control Grid */}
         <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6} mb={8}>
-          {/* Robot Controls */}
+          {/* Virtual Joystick */}
           <GridItem>
             <Box
               bg={cardBg}
@@ -348,47 +407,67 @@ const RobotDetail: React.FC = () => {
               position="relative"
             >
               <Heading size="md" mb={6} color={isOnline ? "inherit" : "gray.400"}>
-                로봇 제어
+                🕹️ 가상 조이스틱
               </Heading>
-              <VStack spacing={6} align="stretch">
-                <HStack spacing={4}>
+              <VStack spacing={6} align="center">
+                <VirtualJoystick
+                  size={200}
+                  onMove={handleJoystickMove}
+                  onStop={handleJoystickStop}
+                  disabled={!isOnline}
+                />
+
+                <FormControl>
+                  <FormLabel color={isOnline ? "inherit" : "gray.400"}>회전 속도 (rad/s)</FormLabel>
+                  <NumberInput
+                    value={maxAngularSpeed}
+                    onChange={(_, value) => setMaxAngularSpeed(value)}
+                    min={0}
+                    max={5}
+                    step={0.1}
+                    isDisabled={!isOnline}
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
+                </FormControl>
+
+                <HStack w="100%" spacing={2}>
                   <Button
-                    colorScheme="green"
-                    leftIcon={<Icon as={FiPlay as any} />}
+                    colorScheme="blue"
                     flex={1}
+                    onMouseDown={() => sendRotate('left', maxAngularSpeed)}
+                    onMouseUp={() => sendStop()}
+                    onTouchStart={() => sendRotate('left', maxAngularSpeed)}
+                    onTouchEnd={() => sendStop()}
                     disabled={!isOnline}
                   >
-                    시작
+                    ↺ 좌회전
                   </Button>
                   <Button
-                    colorScheme="red"
-                    leftIcon={<Icon as={FiPause as any} />}
+                    colorScheme="blue"
                     flex={1}
+                    onMouseDown={() => sendRotate('right', maxAngularSpeed)}
+                    onMouseUp={() => sendStop()}
+                    onTouchStart={() => sendRotate('right', maxAngularSpeed)}
+                    onTouchEnd={() => sendStop()}
                     disabled={!isOnline}
                   >
-                    정지
+                    ↻ 우회전
                   </Button>
                 </HStack>
 
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="auto-mode" mb="0" color={isOnline ? "inherit" : "gray.400"}>
-                    자동 모드
-                  </FormLabel>
-                  <Switch id="auto-mode" colorScheme="blue" disabled={!isOnline} />
-                </FormControl>
-
-                <Box>
-                  <FormLabel color={isOnline ? "inherit" : "gray.400"}>속도 조절</FormLabel>
-                  <Slider defaultValue={50} min={0} max={100} isDisabled={!isOnline}>
-                    <SliderTrack>
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <SliderThumb />
-                  </Slider>
-                </Box>
-
-                <Button colorScheme="orange" w="100%" disabled={!isOnline}>
-                  긴급 정지
+                <Button
+                  colorScheme="red"
+                  w="100%"
+                  size="lg"
+                  onClick={handleEmergencyStop}
+                  disabled={!isOnline}
+                >
+                  🛑 비상 정지
                 </Button>
               </VStack>
               {!isOnline && (
@@ -409,7 +488,7 @@ const RobotDetail: React.FC = () => {
                       제어 불가
                     </Text>
                     <Text fontSize="sm" color="gray.500">
-                      로봇이 오프라인 상태입니다
+                      로봇을 먼저 연결하세요
                     </Text>
                   </VStack>
                 </Box>
@@ -417,7 +496,7 @@ const RobotDetail: React.FC = () => {
             </Box>
           </GridItem>
 
-          {/* Robot Settings */}
+          {/* Mode Control */}
           <GridItem>
             <Box
               bg={cardBg}
@@ -428,36 +507,95 @@ const RobotDetail: React.FC = () => {
               position="relative"
             >
               <Heading size="md" mb={6} color={isOnline ? "inherit" : "gray.400"}>
-                로봇 설정
+                🎮 모드 제어
               </Heading>
               <VStack spacing={6} align="stretch">
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="night-mode" mb="0" color={isOnline ? "inherit" : "gray.400"}>
-                    야간 모드
-                  </FormLabel>
-                  <Switch id="night-mode" colorScheme="purple" disabled={!isOnline} />
-                </FormControl>
+                <Box
+                  p={4}
+                  bg="blue.50"
+                  borderRadius="md"
+                  border="2px solid"
+                  borderColor="blue.200"
+                >
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    현재 모드
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+                    {currentMode.modeName}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Mode {currentMode.currentMode}
+                  </Text>
+                </Box>
 
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="sound-alerts" mb="0" color={isOnline ? "inherit" : "gray.400"}>
-                    소리 알림
-                  </FormLabel>
-                  <Switch id="sound-alerts" colorScheme="green" defaultChecked disabled={!isOnline} />
+                <FormControl>
+                  <FormLabel color={isOnline ? "inherit" : "gray.400"}>모드 속도</FormLabel>
+                  <NumberInput
+                    value={modeSpeed}
+                    onChange={(_, value) => setModeSpeed(value)}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    isDisabled={!isOnline}
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
                 </FormControl>
 
                 <Box>
-                  <FormLabel color={isOnline ? "inherit" : "gray.400"}>청소 강도</FormLabel>
-                  <Slider defaultValue={75} min={0} max={100} isDisabled={!isOnline}>
-                    <SliderTrack>
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <SliderThumb />
-                  </Slider>
-                </Box>
+                  <Flex justify="space-between" align="center" mb={3}>
+                    <FormLabel mb={0} color={isOnline ? "inherit" : "gray.400"}>모드 선택</FormLabel>
+                    <Button
+                      size="xs"
+                      colorScheme="purple"
+                      onClick={() => {
+                        getMode();
+                        getModeList();
+                      }}
+                      disabled={!isOnline}
+                    >
+                      새로고침
+                    </Button>
+                  </Flex>
+                  <SimpleGrid columns={2} spacing={3}>
+                    {availableModes.map((mode) => {
+                      const isActive = mode.value === currentMode.currentMode;
+                      const isEmergency = mode.value === 99;
 
-                <Button colorScheme="blue" w="100%" disabled={!isOnline}>
-                  설정 저장
-                </Button>
+                      return (
+                        <Button
+                          key={mode.value}
+                          size="md"
+                          colorScheme={
+                            isEmergency ? 'red' :
+                            isActive ? 'blue' :
+                            'gray'
+                          }
+                          variant={isActive ? 'solid' : 'outline'}
+                          onClick={() => handleSetMode(mode.value)}
+                          disabled={!isOnline}
+                          leftIcon={isActive ? <Text>✓</Text> : undefined}
+                          h="60px"
+                          whiteSpace="normal"
+                          textAlign="center"
+                        >
+                          <VStack spacing={0}>
+                            <Text fontWeight="bold" fontSize="sm">
+                              {mode.name}
+                            </Text>
+                            <Text fontSize="xs" opacity={0.8}>
+                              Mode {mode.value}
+                            </Text>
+                          </VStack>
+                        </Button>
+                      );
+                    })}
+                  </SimpleGrid>
+                </Box>
               </VStack>
               {!isOnline && (
                 <Box
@@ -474,10 +612,10 @@ const RobotDetail: React.FC = () => {
                 >
                   <VStack spacing={2}>
                     <Text fontSize="lg" color="gray.500" fontWeight="bold">
-                      설정 불가
+                      제어 불가
                     </Text>
                     <Text fontSize="sm" color="gray.500">
-                      로봇이 오프라인 상태입니다
+                      로봇을 먼저 연결하세요
                     </Text>
                   </VStack>
                 </Box>
@@ -486,80 +624,37 @@ const RobotDetail: React.FC = () => {
           </GridItem>
         </Grid>
 
-        {/* Status Log */}
+        {/* Control Logs */}
         <Box
           bg={cardBg}
           p={6}
           borderRadius="lg"
           shadow="sm"
-          opacity={isOnline ? 1 : 0.5}
-          position="relative"
         >
-          <Heading size="md" mb={4} color={isOnline ? "inherit" : "gray.400"}>
-            상태 로그
-          </Heading>
-          <VStack spacing={3} align="stretch">
-            {isOnline ? (
-              <>
-                <Flex justify="space-between" align="center" p={3} bg="gray.50" borderRadius="md">
-                  <Text fontSize="sm">14:32 - 청소 작업 시작</Text>
-                  <Badge colorScheme="blue">진행중</Badge>
-                </Flex>
-                <Flex justify="space-between" align="center" p={3} bg="gray.50" borderRadius="md">
-                  <Text fontSize="sm">14:25 - 배터리 85%로 충전 완료</Text>
-                  <Badge colorScheme="green">완료</Badge>
-                </Flex>
-                <Flex justify="space-between" align="center" p={3} bg="gray.50" borderRadius="md">
-                  <Text fontSize="sm">13:45 - 자동 충전 모드 시작</Text>
-                  <Badge colorScheme="yellow">충전</Badge>
-                </Flex>
-                <Flex justify="space-between" align="center" p={3} bg="gray.50" borderRadius="md">
-                  <Text fontSize="sm">13:30 - 거실 청소 완료</Text>
-                  <Badge colorScheme="green">완료</Badge>
-                </Flex>
-              </>
+          <Flex justify="space-between" align="center" mb={4}>
+            <Heading size="md">📋 제어 로그</Heading>
+            <Button size="sm" colorScheme="red" onClick={clearLogs}>
+              로그 지우기
+            </Button>
+          </Flex>
+          <Box
+            bg="gray.900"
+            color="green.300"
+            p={4}
+            borderRadius="md"
+            fontFamily="monospace"
+            fontSize="sm"
+            maxH="300px"
+            overflowY="auto"
+          >
+            {logs.length === 0 ? (
+              <Text color="gray.500">로그가 없습니다...</Text>
             ) : (
-              <>
-                <Flex justify="space-between" align="center" p={3} bg="gray.100" borderRadius="md">
-                  <Text fontSize="sm" color="gray.400">{formatLastSeen(robot.lastSeen)} - 연결 끊김</Text>
-                  <Badge colorScheme="gray">오프라인</Badge>
-                </Flex>
-                <Flex justify="center" align="center" p={8}>
-                  <VStack spacing={2}>
-                    <Text fontSize="md" color="gray.500" fontWeight="semibold">
-                      로그 데이터 없음
-                    </Text>
-                    <Text fontSize="sm" color="gray.400">
-                      로봇이 온라인 상태가 되면 실시간 로그가 표시됩니다
-                    </Text>
-                  </VStack>
-                </Flex>
-              </>
+              logs.map((log, index) => (
+                <Text key={index}>{log}</Text>
+              ))
             )}
-          </VStack>
-          {!isOnline && (
-            <Box
-              position="absolute"
-              top="0"
-              left="0"
-              right="0"
-              bottom="0"
-              bg="blackAlpha.100"
-              borderRadius="lg"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <VStack spacing={2}>
-                <Text fontSize="lg" color="gray.500" fontWeight="bold">
-                  로그 확인 불가
-                </Text>
-                <Text fontSize="sm" color="gray.500">
-                  로봇이 오프라인 상태입니다
-                </Text>
-              </VStack>
-            </Box>
-          )}
+          </Box>
         </Box>
       </Container>
     </Box>
