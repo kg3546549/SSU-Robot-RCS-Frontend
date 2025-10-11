@@ -430,6 +430,67 @@ const RobotDetail: React.FC = () => {
           </Box>
         </SimpleGrid>
 
+        {/* Camera View */}
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="lg"
+          shadow="sm"
+          mb={8}
+        >
+          <Heading size="md" mb={4}>
+            📹 카메라 뷰
+          </Heading>
+          <Box
+            bg="gray.100"
+            borderRadius="md"
+            overflow="hidden"
+            position="relative"
+            paddingTop="56.25%" // 16:9 aspect ratio
+          >
+            {isOnline ? (
+              <Box
+                as="img"
+                src={`http://localhost:3001/robots/${robotId}/camera?t=${Date.now()}`}
+                alt="Robot Camera Feed"
+                position="absolute"
+                top="0"
+                left="0"
+                width="100%"
+                height="100%"
+                objectFit="contain"
+                bg="black"
+                onError={(e) => {
+                  console.error('Camera image failed to load');
+                }}
+                onLoad={() => {
+                  console.log('Camera image loaded successfully');
+                }}
+              />
+            ) : (
+              <Flex
+                position="absolute"
+                top="0"
+                left="0"
+                width="100%"
+                height="100%"
+                alignItems="center"
+                justifyContent="center"
+                bg="gray.800"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="lg" color="gray.400" fontWeight="bold">
+                    카메라 사용 불가
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    로봇을 먼저 연결하세요
+                  </Text>
+                </VStack>
+              </Flex>
+            )}
+          </Box>
+        </Box>
+
         {/* Control Grid */}
         <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6} mb={8}>
           {/* Virtual Joystick */}
