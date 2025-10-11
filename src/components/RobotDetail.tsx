@@ -3,7 +3,6 @@ import {
   Box,
   Container,
   Grid,
-  GridItem,
   Heading,
   Text,
   Stat,
@@ -20,19 +19,13 @@ import {
   Icon,
   SimpleGrid,
   Progress,
-  Switch,
   FormControl,
   FormLabel,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
   Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Select,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -40,30 +33,27 @@ import {
   NumberDecrementStepper,
 } from '@chakra-ui/react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiBattery, FiWifi, FiActivity, FiSettings, FiPlay, FiPause, FiRefreshCw } from 'react-icons/fi';
+import { FiBattery, FiWifi, FiActivity, FiSettings, FiRefreshCw } from 'react-icons/fi';
 import { useRobot } from '../hooks/useRobots';
 import { useRobotControl } from '../hooks/useRobotControl';
 import VirtualJoystick from './VirtualJoystick';
 import { useRecentRobot } from '../contexts/RecentRobotContext';
 
-const RobotDetail: React.FC = () => {
+const RobotDetailNew: React.FC = () => {
   const { robotId } = useParams<{ robotId: string }>();
   const navigate = useNavigate();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const { recentRobotId, setRecentRobotId } = useRecentRobot();
 
-  // robotId가 없고 최근 조회한 로봇이 있다면 리다이렉트
   React.useEffect(() => {
     if (!robotId && recentRobotId) {
       navigate(`/robot-detail/${recentRobotId}`, { replace: true });
     }
   }, [robotId, recentRobotId, navigate]);
 
-  // API 연동을 위한 hooks
   const { robot, loading, error, refreshRobot } = useRobot(robotId);
 
-  // Robot control hook
   const {
     isConnected,
     isRobotConnected,
@@ -83,24 +73,19 @@ const RobotDetail: React.FC = () => {
   } = useRobotControl(robotId || '');
 
   const [maxAngularSpeed, setMaxAngularSpeed] = useState(1.0);
-  const [selectedMode, setSelectedMode] = useState(0);
   const [modeSpeed, setModeSpeed] = useState(0.5);
 
-  // Connect to robot when component mounts
   useEffect(() => {
     if (robotId && isConnected && !isRobotConnected) {
       connectToRobot();
     }
   }, [robotId, isConnected, isRobotConnected, connectToRobot]);
 
-  // 로봇 정보가 로드되면 최근 조회한 로봇으로 설정
   useEffect(() => {
     if (robot && robotId) {
       setRecentRobotId(robotId);
     }
   }, [robot, robotId, setRecentRobotId]);
-
-  // 모드 정보는 useRobotControl Hook에서 자동으로 요청됨
 
   const handleJoystickMove = (data: { x: number; y: number }) => {
     sendJoystick(data);
@@ -147,10 +132,8 @@ const RobotDetail: React.FC = () => {
     return `${Math.floor(diffInMinutes / 1440)}일 전`;
   };
 
-  // 로봇 온라인 상태 확인 (WebSocket 연결 상태 우선)
   const isOnline = isRobotConnected || robot?.status === 'online';
 
-  // robotId가 없고 최근 조회한 로봇도 없는 경우
   if (!robotId && !recentRobotId) {
     return (
       <Box bg={bgColor} minH="100vh">
@@ -205,414 +188,75 @@ const RobotDetail: React.FC = () => {
     );
   }
 
-
   return (
     <Box bg={bgColor} minH="100vh">
       <Container maxW="container.xl" py={8}>
-        {/* Header */}
-        <Flex mb={8}>
-          <VStack align="start" spacing={1}>
-            <Heading size="lg" color="gray.700">
-              {robot.name} 상세 제어
-            </Heading>
-            <Text color="gray.500">{robot.description || '로봇의 실시간 상태를 확인하고 제어하세요'}</Text>
-            <HStack spacing={4}>
-              <Text fontSize="sm" color="gray.600">
-                ID: {robot.id}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                IP: {robot.ipAddress}:{robot.port}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                타입: {robot.type}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                마지막 접속: {formatLastSeen(robot.lastSeen)}
-              </Text>
-            </HStack>
-          </VStack>
-          <Spacer />
-          <HStack spacing={4}>
-            <Button colorScheme="blue" size="sm" leftIcon={<Icon as={FiRefreshCw as any} />} onClick={refreshRobot}>
-              새로고침
-            </Button>
-            {!isRobotConnected ? (
-              <Button colorScheme="green" size="sm" onClick={connectToRobot} isDisabled={!isConnected}>
-                로봇 연결
-              </Button>
-            ) : (
-              <Button colorScheme="red" size="sm" onClick={disconnectFromRobot}>
-                연결 해제
-              </Button>
-            )}
-            <Badge colorScheme={isRobotConnected ? 'green' : getStatusColor(robot.status)} fontSize="md" p={2}>
-              {isRobotConnected ? '연결됨' : getStatusLabel(robot.status)}
-            </Badge>
-          </HStack>
-        </Flex>
-
-        {/* Robot Status Cards */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
-          <Box
-            bg={cardBg}
-            p={6}
-            borderRadius="lg"
-            shadow="sm"
-            opacity={isOnline ? 1 : 0.5}
-            position="relative"
-          >
-            <Flex align="center">
-              <Box>
-                <Stat>
-                  <StatLabel color="gray.500">배터리</StatLabel>
-                  <StatNumber fontSize="2xl" color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "85%" : "-- %"}
-                  </StatNumber>
-                  <StatHelpText color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "4시간 30분 남음" : "데이터 없음"}
-                  </StatHelpText>
-                </Stat>
-              </Box>
-              <Spacer />
-              <Box bg={isOnline ? "green.100" : "gray.100"} p={3} borderRadius="lg">
-                <Icon as={FiBattery as any} w={6} h={6} color={isOnline ? "green.500" : "gray.400"} />
-              </Box>
-            </Flex>
-            <Progress value={isOnline ? 85 : 0} colorScheme={isOnline ? "green" : "gray"} size="sm" mt={3} />
-            {!isOnline && (
-              <Box
-                position="absolute"
-                top="0"
-                left="0"
-                right="0"
-                bottom="0"
-                bg="blackAlpha.100"
-                borderRadius="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="sm" color="gray.500" fontWeight="semibold">오프라인</Text>
-              </Box>
-            )}
-          </Box>
-
-          <Box
-            bg={cardBg}
-            p={6}
-            borderRadius="lg"
-            shadow="sm"
-            opacity={isOnline ? 1 : 0.5}
-            position="relative"
-          >
-            <Flex align="center">
-              <Box>
-                <Stat>
-                  <StatLabel color="gray.500">신호 강도</StatLabel>
-                  <StatNumber fontSize="2xl" color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "-45dBm" : "-- dBm"}
-                  </StatNumber>
-                  <StatHelpText color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "우수한 연결" : "연결 없음"}
-                  </StatHelpText>
-                </Stat>
-              </Box>
-              <Spacer />
-              <Box bg={isOnline ? "blue.100" : "gray.100"} p={3} borderRadius="lg">
-                <Icon as={FiWifi as any} w={6} h={6} color={isOnline ? "blue.500" : "gray.400"} />
-              </Box>
-            </Flex>
-            <Progress value={isOnline ? 90 : 0} colorScheme={isOnline ? "blue" : "gray"} size="sm" mt={3} />
-            {!isOnline && (
-              <Box
-                position="absolute"
-                top="0"
-                left="0"
-                right="0"
-                bottom="0"
-                bg="blackAlpha.100"
-                borderRadius="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="sm" color="gray.500" fontWeight="semibold">오프라인</Text>
-              </Box>
-            )}
-          </Box>
-
-          <Box
-            bg={cardBg}
-            p={6}
-            borderRadius="lg"
-            shadow="sm"
-            opacity={isOnline ? 1 : 0.5}
-            position="relative"
-          >
-            <Flex align="center">
-              <Box>
-                <Stat>
-                  <StatLabel color="gray.500">CPU 사용률</StatLabel>
-                  <StatNumber fontSize="2xl" color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "42%" : "-- %"}
-                  </StatNumber>
-                  <StatHelpText color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "정상 범위" : "데이터 없음"}
-                  </StatHelpText>
-                </Stat>
-              </Box>
-              <Spacer />
-              <Box bg={isOnline ? "purple.100" : "gray.100"} p={3} borderRadius="lg">
-                <Icon as={FiActivity as any} w={6} h={6} color={isOnline ? "purple.500" : "gray.400"} />
-              </Box>
-            </Flex>
-            <Progress value={isOnline ? 42 : 0} colorScheme={isOnline ? "purple" : "gray"} size="sm" mt={3} />
-            {!isOnline && (
-              <Box
-                position="absolute"
-                top="0"
-                left="0"
-                right="0"
-                bottom="0"
-                bg="blackAlpha.100"
-                borderRadius="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="sm" color="gray.500" fontWeight="semibold">오프라인</Text>
-              </Box>
-            )}
-          </Box>
-
-          <Box
-            bg={cardBg}
-            p={6}
-            borderRadius="lg"
-            shadow="sm"
-            opacity={isOnline ? 1 : 0.5}
-            position="relative"
-          >
-            <Flex align="center">
-              <Box>
-                <Stat>
-                  <StatLabel color="gray.500">온도</StatLabel>
-                  <StatNumber fontSize="2xl" color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "38°C" : "-- °C"}
-                  </StatNumber>
-                  <StatHelpText color={isOnline ? "inherit" : "gray.400"}>
-                    {isOnline ? "적정 온도" : "데이터 없음"}
-                  </StatHelpText>
-                </Stat>
-              </Box>
-              <Spacer />
-              <Box bg={isOnline ? "orange.100" : "gray.100"} p={3} borderRadius="lg">
-                <Icon as={FiSettings as any} w={6} h={6} color={isOnline ? "orange.500" : "gray.400"} />
-              </Box>
-            </Flex>
-            <Progress value={isOnline ? 60 : 0} colorScheme={isOnline ? "orange" : "gray"} size="sm" mt={3} />
-            {!isOnline && (
-              <Box
-                position="absolute"
-                top="0"
-                left="0"
-                right="0"
-                bottom="0"
-                bg="blackAlpha.100"
-                borderRadius="lg"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="sm" color="gray.500" fontWeight="semibold">오프라인</Text>
-              </Box>
-            )}
-          </Box>
-        </SimpleGrid>
-
-        {/* Camera View */}
-        <Box
-          bg={cardBg}
-          p={6}
-          borderRadius="lg"
-          shadow="sm"
-          mb={8}
-        >
-          <Heading size="md" mb={4}>
-            📹 카메라 뷰
-          </Heading>
-          <Box
-            bg="gray.100"
-            borderRadius="md"
-            overflow="hidden"
-            position="relative"
-            paddingTop="56.25%" // 16:9 aspect ratio
-          >
-            {isOnline ? (
-              <Box
-                as="img"
-                src={`http://localhost:3001/robots/${robotId}/camera?t=${Date.now()}`}
-                alt="Robot Camera Feed"
-                position="absolute"
-                top="0"
-                left="0"
-                width="100%"
-                height="100%"
-                objectFit="contain"
-                bg="black"
-                onError={(e) => {
-                  console.error('Camera image failed to load');
-                }}
-                onLoad={() => {
-                  console.log('Camera image loaded successfully');
-                }}
-              />
-            ) : (
-              <Flex
-                position="absolute"
-                top="0"
-                left="0"
-                width="100%"
-                height="100%"
-                alignItems="center"
-                justifyContent="center"
-                bg="gray.800"
-              >
-                <VStack spacing={2}>
-                  <Text fontSize="lg" color="gray.400" fontWeight="bold">
-                    카메라 사용 불가
+        <Flex gap={6} align="flex-start">
+          {/* Main Content */}
+          <Box flex="1">
+            {/* Header */}
+            <Flex mb={6}>
+              <VStack align="start" spacing={1}>
+                <Heading size="lg" color="gray.700">
+                  {robot.name} 상세 제어
+                </Heading>
+                <Text color="gray.500">{robot.description || '로봇의 실시간 상태를 확인하고 제어하세요'}</Text>
+                <HStack spacing={4}>
+                  <Text fontSize="sm" color="gray.600">
+                    ID: {robot.id}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    로봇을 먼저 연결하세요
+                  <Text fontSize="sm" color="gray.600">
+                    IP: {robot.ipAddress}:{robot.port}
                   </Text>
-                </VStack>
-              </Flex>
-            )}
-          </Box>
-        </Box>
-
-        {/* Control Grid */}
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6} mb={8}>
-          {/* Virtual Joystick */}
-          <GridItem>
-            <Box
-              bg={cardBg}
-              p={6}
-              borderRadius="lg"
-              shadow="sm"
-              opacity={isOnline ? 1 : 0.5}
-              position="relative"
-            >
-              <Heading size="md" mb={6} color={isOnline ? "inherit" : "gray.400"}>
-                🕹️ 가상 조이스틱
-              </Heading>
-              <VStack spacing={6} align="center">
-                <VirtualJoystick
-                  size={200}
-                  onMove={handleJoystickMove}
-                  onStop={handleJoystickStop}
-                  disabled={!isOnline}
-                />
-
-                <FormControl>
-                  <FormLabel color={isOnline ? "inherit" : "gray.400"}>회전 속도 (rad/s)</FormLabel>
-                  <NumberInput
-                    value={maxAngularSpeed}
-                    onChange={(_, value) => setMaxAngularSpeed(value)}
-                    min={0}
-                    max={5}
-                    step={0.1}
-                    isDisabled={!isOnline}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
-                </FormControl>
-
-                <HStack w="100%" spacing={2}>
-                  <Button
-                    colorScheme="blue"
-                    flex={1}
-                    onMouseDown={() => sendRotate('left', maxAngularSpeed)}
-                    onMouseUp={() => sendStop()}
-                    onTouchStart={() => sendRotate('left', maxAngularSpeed)}
-                    onTouchEnd={() => sendStop()}
-                    disabled={!isOnline}
-                  >
-                    ↺ 좌회전
-                  </Button>
-                  <Button
-                    colorScheme="blue"
-                    flex={1}
-                    onMouseDown={() => sendRotate('right', maxAngularSpeed)}
-                    onMouseUp={() => sendStop()}
-                    onTouchStart={() => sendRotate('right', maxAngularSpeed)}
-                    onTouchEnd={() => sendStop()}
-                    disabled={!isOnline}
-                  >
-                    ↻ 우회전
-                  </Button>
+                  <Text fontSize="sm" color="gray.600">
+                    타입: {robot.type}
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    마지막 접속: {formatLastSeen(robot.lastSeen)}
+                  </Text>
                 </HStack>
-
-                <Button
-                  colorScheme="red"
-                  w="100%"
-                  size="lg"
-                  onClick={handleEmergencyStop}
-                  disabled={!isOnline}
-                >
-                  🛑 비상 정지
-                </Button>
               </VStack>
-              {!isOnline && (
-                <Box
-                  position="absolute"
-                  top="0"
-                  left="0"
-                  right="0"
-                  bottom="0"
-                  bg="blackAlpha.100"
-                  borderRadius="lg"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <VStack spacing={2}>
-                    <Text fontSize="lg" color="gray.500" fontWeight="bold">
-                      제어 불가
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      로봇을 먼저 연결하세요
-                    </Text>
-                  </VStack>
-                </Box>
-              )}
-            </Box>
-          </GridItem>
+              <Spacer />
+              <HStack spacing={4}>
+                <Button colorScheme="blue" size="sm" leftIcon={<Icon as={FiRefreshCw as any} />} onClick={refreshRobot}>
+                  새로고침
+                </Button>
+                {!isRobotConnected ? (
+                  <Button colorScheme="green" size="sm" onClick={connectToRobot} isDisabled={!isConnected}>
+                    로봇 연결
+                  </Button>
+                ) : (
+                  <Button colorScheme="red" size="sm" onClick={disconnectFromRobot}>
+                    연결 해제
+                  </Button>
+                )}
+                <Badge colorScheme={isRobotConnected ? 'green' : getStatusColor(robot.status)} fontSize="md" p={2}>
+                  {isRobotConnected ? '연결됨' : getStatusLabel(robot.status)}
+                </Badge>
+              </HStack>
+            </Flex>
 
-          {/* Mode Control */}
-          <GridItem>
+            {/* Mode Control - Top */}
             <Box
               bg={cardBg}
               p={6}
               borderRadius="lg"
               shadow="sm"
+              mb={6}
               opacity={isOnline ? 1 : 0.5}
               position="relative"
             >
-              <Heading size="md" mb={6} color={isOnline ? "inherit" : "gray.400"}>
+              <Heading size="md" mb={4}>
                 🎮 모드 제어
               </Heading>
-              <VStack spacing={6} align="stretch">
+              <Flex gap={6} align="flex-start">
                 <Box
                   p={4}
                   bg="blue.50"
                   borderRadius="md"
                   border="2px solid"
                   borderColor="blue.200"
+                  minW="200px"
                 >
                   <Text fontSize="sm" color="gray.600" mb={1}>
                     현재 모드
@@ -625,7 +269,7 @@ const RobotDetail: React.FC = () => {
                   </Text>
                 </Box>
 
-                <FormControl>
+                <FormControl flex="1" maxW="200px">
                   <FormLabel color={isOnline ? "inherit" : "gray.400"}>모드 속도</FormLabel>
                   <NumberInput
                     value={modeSpeed}
@@ -643,7 +287,7 @@ const RobotDetail: React.FC = () => {
                   </NumberInput>
                 </FormControl>
 
-                <Box>
+                <Box flex="2">
                   <Flex justify="space-between" align="center" mb={3}>
                     <FormLabel mb={0} color={isOnline ? "inherit" : "gray.400"}>모드 선택</FormLabel>
                     <Button
@@ -658,7 +302,7 @@ const RobotDetail: React.FC = () => {
                       새로고침
                     </Button>
                   </Flex>
-                  <SimpleGrid columns={2} spacing={3}>
+                  <SimpleGrid columns={4} spacing={2}>
                     {availableModes.map((mode) => {
                       const isActive = mode.value === currentMode.currentMode;
                       const isEmergency = mode.value === 99;
@@ -666,7 +310,7 @@ const RobotDetail: React.FC = () => {
                       return (
                         <Button
                           key={mode.value}
-                          size="md"
+                          size="sm"
                           colorScheme={
                             isEmergency ? 'red' :
                             isActive ? 'blue' :
@@ -676,16 +320,16 @@ const RobotDetail: React.FC = () => {
                           onClick={() => handleSetMode(mode.value)}
                           disabled={!isOnline}
                           leftIcon={isActive ? <Text>✓</Text> : undefined}
-                          h="60px"
+                          h="50px"
                           whiteSpace="normal"
                           textAlign="center"
                         >
                           <VStack spacing={0}>
-                            <Text fontWeight="bold" fontSize="sm">
+                            <Text fontWeight="bold" fontSize="xs">
                               {mode.name}
                             </Text>
-                            <Text fontSize="xs" opacity={0.8}>
-                              Mode {mode.value}
+                            <Text fontSize="2xs" opacity={0.8}>
+                              {mode.value}
                             </Text>
                           </VStack>
                         </Button>
@@ -693,7 +337,7 @@ const RobotDetail: React.FC = () => {
                     })}
                   </SimpleGrid>
                 </Box>
-              </VStack>
+              </Flex>
               {!isOnline && (
                 <Box
                   position="absolute"
@@ -707,55 +351,293 @@ const RobotDetail: React.FC = () => {
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <VStack spacing={2}>
-                    <Text fontSize="lg" color="gray.500" fontWeight="bold">
-                      제어 불가
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      로봇을 먼저 연결하세요
-                    </Text>
-                  </VStack>
+                  <Text fontSize="lg" color="gray.500" fontWeight="bold">
+                    로봇을 먼저 연결하세요
+                  </Text>
                 </Box>
               )}
             </Box>
-          </GridItem>
-        </Grid>
 
-        {/* Control Logs */}
-        <Box
-          bg={cardBg}
-          p={6}
-          borderRadius="lg"
-          shadow="sm"
-        >
-          <Flex justify="space-between" align="center" mb={4}>
-            <Heading size="md">📋 제어 로그</Heading>
-            <Button size="sm" colorScheme="red" onClick={clearLogs}>
-              로그 지우기
-            </Button>
-          </Flex>
-          <Box
-            bg="gray.900"
-            color="green.300"
-            p={4}
-            borderRadius="md"
-            fontFamily="monospace"
-            fontSize="sm"
-            maxH="300px"
-            overflowY="auto"
-          >
-            {logs.length === 0 ? (
-              <Text color="gray.500">로그가 없습니다...</Text>
-            ) : (
-              logs.map((log, index) => (
-                <Text key={index}>{log}</Text>
-              ))
-            )}
+            {/* Camera and Joystick Row */}
+            <Grid templateColumns="2fr 1fr" gap={6} mb={6}>
+              {/* Camera View */}
+              <Box
+                bg={cardBg}
+                p={6}
+                borderRadius="lg"
+                shadow="sm"
+              >
+                <Heading size="md" mb={4}>
+                  📹 카메라 뷰
+                </Heading>
+                <Box
+                  bg="gray.100"
+                  borderRadius="md"
+                  overflow="hidden"
+                  position="relative"
+                  paddingTop="56.25%"
+                >
+                  {isOnline ? (
+                    <Box
+                      as="img"
+                      src={`http://localhost:3001/robots/${robotId}/camera?t=${Date.now()}`}
+                      alt="Robot Camera Feed"
+                      position="absolute"
+                      top="0"
+                      left="0"
+                      width="100%"
+                      height="100%"
+                      objectFit="contain"
+                      bg="black"
+                    />
+                  ) : (
+                    <Flex
+                      position="absolute"
+                      top="0"
+                      left="0"
+                      width="100%"
+                      height="100%"
+                      alignItems="center"
+                      justifyContent="center"
+                      bg="gray.800"
+                    >
+                      <VStack spacing={2}>
+                        <Text fontSize="lg" color="gray.400" fontWeight="bold">
+                          카메라 사용 불가
+                        </Text>
+                        <Text fontSize="sm" color="gray.500">
+                          로봇을 먼저 연결하세요
+                        </Text>
+                      </VStack>
+                    </Flex>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Virtual Joystick */}
+              <Box
+                bg={cardBg}
+                p={6}
+                borderRadius="lg"
+                shadow="sm"
+                opacity={isOnline ? 1 : 0.5}
+                position="relative"
+              >
+                <Heading size="md" mb={4}>
+                  🕹️ 조이스틱
+                </Heading>
+                <VStack spacing={4} align="center">
+                  <VirtualJoystick
+                    size={180}
+                    onMove={handleJoystickMove}
+                    onStop={handleJoystickStop}
+                    disabled={!isOnline}
+                  />
+
+                  <FormControl>
+                    <FormLabel color={isOnline ? "inherit" : "gray.400"}>회전 속도</FormLabel>
+                    <NumberInput
+                      value={maxAngularSpeed}
+                      onChange={(_, value) => setMaxAngularSpeed(value)}
+                      min={0}
+                      max={5}
+                      step={0.1}
+                      isDisabled={!isOnline}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  <HStack w="100%" spacing={2}>
+                    <Button
+                      colorScheme="blue"
+                      flex={1}
+                      size="sm"
+                      onMouseDown={() => sendRotate('left', maxAngularSpeed)}
+                      onMouseUp={() => sendStop()}
+                      onTouchStart={() => sendRotate('left', maxAngularSpeed)}
+                      onTouchEnd={() => sendStop()}
+                      disabled={!isOnline}
+                    >
+                      ↺ 좌
+                    </Button>
+                    <Button
+                      colorScheme="blue"
+                      flex={1}
+                      size="sm"
+                      onMouseDown={() => sendRotate('right', maxAngularSpeed)}
+                      onMouseUp={() => sendStop()}
+                      onTouchStart={() => sendRotate('right', maxAngularSpeed)}
+                      onTouchEnd={() => sendStop()}
+                      disabled={!isOnline}
+                    >
+                      ↻ 우
+                    </Button>
+                  </HStack>
+
+                  <Button
+                    colorScheme="red"
+                    w="100%"
+                    size="md"
+                    onClick={handleEmergencyStop}
+                    disabled={!isOnline}
+                  >
+                    🛑 비상 정지
+                  </Button>
+                </VStack>
+                {!isOnline && (
+                  <Box
+                    position="absolute"
+                    top="0"
+                    left="0"
+                    right="0"
+                    bottom="0"
+                    bg="blackAlpha.100"
+                    borderRadius="lg"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Text fontSize="lg" color="gray.500" fontWeight="bold">
+                      제어 불가
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+
+            {/* Control Logs */}
+            <Box
+              bg={cardBg}
+              p={6}
+              borderRadius="lg"
+              shadow="sm"
+            >
+              <Flex justify="space-between" align="center" mb={4}>
+                <Heading size="md">📋 제어 로그</Heading>
+                <Button size="sm" colorScheme="red" onClick={clearLogs}>
+                  로그 지우기
+                </Button>
+              </Flex>
+              <Box
+                bg="gray.900"
+                color="green.300"
+                p={4}
+                borderRadius="md"
+                fontFamily="monospace"
+                fontSize="sm"
+                maxH="300px"
+                overflowY="auto"
+              >
+                {logs.length === 0 ? (
+                  <Text color="gray.500">로그가 없습니다...</Text>
+                ) : (
+                  logs.map((log, index) => (
+                    <Text key={index}>{log}</Text>
+                  ))
+                )}
+              </Box>
+            </Box>
           </Box>
-        </Box>
+
+          {/* Right Sidebar - Status Cards (Fixed) */}
+          <Box w="280px" position="sticky" top="8">
+            <VStack spacing={4} align="stretch">
+              <Heading size="md" mb={2}>📊 상태 정보</Heading>
+
+              {/* Battery */}
+              <Box
+                bg={cardBg}
+                p={4}
+                borderRadius="lg"
+                shadow="sm"
+                opacity={isOnline ? 1 : 0.5}
+              >
+                <Flex align="center" mb={2}>
+                  <Icon as={FiBattery as any} w={5} h={5} color={isOnline ? "green.500" : "gray.400"} />
+                  <Text fontSize="sm" fontWeight="bold" ml={2}>배터리</Text>
+                </Flex>
+                <Text fontSize="2xl" fontWeight="bold" color={isOnline ? "green.600" : "gray.400"}>
+                  {isOnline ? "85%" : "--"}
+                </Text>
+                <Progress value={isOnline ? 85 : 0} colorScheme="green" size="sm" mt={2} />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {isOnline ? "4시간 30분 남음" : "데이터 없음"}
+                </Text>
+              </Box>
+
+              {/* Signal */}
+              <Box
+                bg={cardBg}
+                p={4}
+                borderRadius="lg"
+                shadow="sm"
+                opacity={isOnline ? 1 : 0.5}
+              >
+                <Flex align="center" mb={2}>
+                  <Icon as={FiWifi as any} w={5} h={5} color={isOnline ? "blue.500" : "gray.400"} />
+                  <Text fontSize="sm" fontWeight="bold" ml={2}>신호 강도</Text>
+                </Flex>
+                <Text fontSize="2xl" fontWeight="bold" color={isOnline ? "blue.600" : "gray.400"}>
+                  {isOnline ? "-45dBm" : "--"}
+                </Text>
+                <Progress value={isOnline ? 90 : 0} colorScheme="blue" size="sm" mt={2} />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {isOnline ? "우수한 연결" : "연결 없음"}
+                </Text>
+              </Box>
+
+              {/* CPU */}
+              <Box
+                bg={cardBg}
+                p={4}
+                borderRadius="lg"
+                shadow="sm"
+                opacity={isOnline ? 1 : 0.5}
+              >
+                <Flex align="center" mb={2}>
+                  <Icon as={FiActivity as any} w={5} h={5} color={isOnline ? "purple.500" : "gray.400"} />
+                  <Text fontSize="sm" fontWeight="bold" ml={2}>CPU 사용률</Text>
+                </Flex>
+                <Text fontSize="2xl" fontWeight="bold" color={isOnline ? "purple.600" : "gray.400"}>
+                  {isOnline ? "42%" : "--"}
+                </Text>
+                <Progress value={isOnline ? 42 : 0} colorScheme="purple" size="sm" mt={2} />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {isOnline ? "정상 범위" : "데이터 없음"}
+                </Text>
+              </Box>
+
+              {/* Temperature */}
+              <Box
+                bg={cardBg}
+                p={4}
+                borderRadius="lg"
+                shadow="sm"
+                opacity={isOnline ? 1 : 0.5}
+              >
+                <Flex align="center" mb={2}>
+                  <Icon as={FiSettings as any} w={5} h={5} color={isOnline ? "orange.500" : "gray.400"} />
+                  <Text fontSize="sm" fontWeight="bold" ml={2}>온도</Text>
+                </Flex>
+                <Text fontSize="2xl" fontWeight="bold" color={isOnline ? "orange.600" : "gray.400"}>
+                  {isOnline ? "38°C" : "--"}
+                </Text>
+                <Progress value={isOnline ? 60 : 0} colorScheme="orange" size="sm" mt={2} />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {isOnline ? "적정 온도" : "데이터 없음"}
+                </Text>
+              </Box>
+            </VStack>
+          </Box>
+        </Flex>
       </Container>
     </Box>
   );
 };
 
-export default RobotDetail;
+export default RobotDetailNew;
